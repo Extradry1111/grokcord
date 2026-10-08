@@ -29,6 +29,7 @@ FEATURES = {
     "tldr": "/tldr channel summaries",
     "pulse": "/pulse live X search",
     "imagine": "/imagine images",
+    "websearch": "Web search in chat and /ask",
 }
 CHAT_CONTEXT = 8       # messages of channel context for @mention chat
 THREAD_CONTEXT = 40    # messages of memory inside a Grok thread
@@ -207,7 +208,8 @@ class Grokcord(discord.Client):
             async with message.channel.typing():
                 history = await self.build_history(message)
                 answer = await self.grok.chat_stream(
-                    await self.persona(gid, message.channel.id), history, on_text=on_text, search=True,
+                    await self.persona(gid, message.channel.id), history, on_text=on_text,
+                    search=not gid or await self.store.is_enabled(gid, "websearch"),
                     language=await self.language(gid))
         except Exception as exc:  # noqa: BLE001 - surface every failure to the user
             log.exception("chat failed")
@@ -314,8 +316,10 @@ def register_commands(bot: Grokcord) -> None:
         async def work():
             urls = [image.url] if image and (image.content_type or "").split(";")[0] in IMAGE_TYPES else []
             text = f"{interaction.user.display_name}: {question}"
+            allowed = not gid or await bot.store.is_enabled(gid, "websearch")
             result = await bot.grok.chat(await bot.persona(gid, cid),
-                                         [{"role": "user", "content": user_content(text, urls)}], search=search,
+                                         [{"role": "user", "content": user_content(text, urls)}],
+                                         search=search and allowed,
                                          language=await bot.language(gid))
             return fmt.answer_embeds(result.text, result.sources, title=question[:250]), None, result.tokens
 

@@ -135,7 +135,7 @@ Rough guide for a budget: one fact-check, /pulse or @mention answer uses live se
 /grokcord feature feature:/imagine images enabled:False
 /grokcord feature feature:@mention chat and replies enabled:False
 ```
-You can switch off: @mention chat, /ask, Fact-check, Explain, Translate, /tldr, /pulse, /imagine.
+You can switch off: @mention chat, /ask, Fact-check, Explain, Translate, /tldr, /pulse, /imagine, and **web search in chat and /ask** (the cheapest way to cut costs while keeping the bot fully on).
 
 ### 🩺 Status
 ```
