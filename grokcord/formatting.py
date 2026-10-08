@@ -42,11 +42,11 @@ def domain(url: str) -> str:
     return host[4:] if host.startswith("www.") else host or url
 
 
-def sources_line(sources: list[tuple[str, str]]) -> str:
+def sources_line(sources: list[tuple[str, str]], bold: bool = True) -> str:
     if not sources:
         return ""
     links = [f"[{i}. {domain(url)}](<{url}>)" for i, (url, _title) in enumerate(sources, 1)]
-    return "**Sources:** " + " · ".join(links)
+    return ("**Sources:** " if bold else "Sources: ") + " · ".join(links)
 
 
 def answer_embeds(text: str, sources: list[tuple[str, str]], *, title: str | None = None,

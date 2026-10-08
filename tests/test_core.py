@@ -61,8 +61,9 @@ async def test_fact_check_uses_search_tools_and_parses():
 
 async def test_pulse_sets_from_date():
     grok, calls = fake_grok("**Mood:** hype")
-    await grok.pulse("grokcord", 48, now=datetime(2026, 10, 8, 12, tzinfo=timezone.utc))
+    await grok.pulse("grokcord", 48, "Russian", now=datetime(2026, 10, 8, 12, tzinfo=timezone.utc))
     assert calls.calls[0]["tools"] == [{"type": "x_search", "from_date": "2026-10-06"}]
+    assert "in Russian" in calls.calls[0]["instructions"]
 
 
 async def test_chat_without_search_sends_no_tools():
@@ -71,6 +72,62 @@ async def test_chat_without_search_sends_no_tools():
     assert answer.text == "hey"
     assert "tools" not in calls.calls[0]
     assert "savage" in calls.calls[0]["instructions"]
+    assert calls.calls[0]["reasoning"] == {"effort": "low"}
+    assert "LANGUAGE:" not in calls.calls[0]["instructions"]
+
+
+async def test_pinned_language_and_careful_fact_check():
+    grok, calls = fake_grok("VERDICT: TRUE\n- ok")
+    await grok.chat("helper", [], language="Spanish")
+    assert "Always write your whole reply in Spanish" in calls.calls[0]["instructions"]
+    await grok.fact_check("x", "a")
+    assert calls.calls[1]["reasoning"] == {"effort": "medium"}
+
+
+async def test_reasoning_rejected_once_then_dropped():
+    import openai
+
+    class Picky(FakeResponses):
+        async def create(self, **kwargs):
+            if "reasoning" in kwargs:
+                exc = openai.BadRequestError.__new__(openai.BadRequestError)
+                Exception.__init__(exc, "reasoning is not supported for this model")
+                raise exc
+            return await super().create(**kwargs)
+
+    responses = Picky("fine")
+    grok = Grok("k", "m", "i", "u", client=NS(responses=responses))
+    assert (await grok.chat("helper", [])).text == "fine"
+    assert grok.reasoning is False
+    await grok.chat("helper", [])
+    assert all("reasoning" not in c for c in responses.calls)
+
+
+async def test_chat_stream_reports_progress_and_sources():
+    events = [NS(type="response.created"),
+              NS(type="response.output_text.delta", delta="Hel"),
+              NS(type="response.output_text.delta", delta="lo!"),
+              NS(type="response.completed", response=NS(output_text="Hello!", output=[],
+                                                         citations=["https://a.com"], usage=NS(total_tokens=9)))]
+
+    class Streamy:
+        async def create(self, **kwargs):
+            assert kwargs["stream"] is True
+
+            async def gen():
+                for e in events:
+                    yield e
+            return gen()
+
+    seen = []
+
+    async def on_text(t):
+        seen.append(t)
+
+    grok = Grok("k", "m", "i", "u", client=NS(responses=Streamy()))
+    answer = await grok.chat_stream("helper", [], on_text=on_text, search=True)
+    assert seen == ["Hel", "Hello!"]
+    assert answer.text == "Hello!" and answer.sources == [("https://a.com", "")] and answer.tokens == 9
 
 
 # ── prompts.py ──────────────────────────────────────────────
@@ -137,6 +194,14 @@ async def test_usage_and_limits(store):
     await store.set_limits(1, 10, None)
     await store.set_limits(1, None, 99)
     assert await store.get_limits(1, 40, 600) == (10, 99)
+
+
+async def test_language_setting(store):
+    assert await store.get_language(1) is None
+    await store.set_language(1, "Russian")
+    assert await store.get_language(1) == "Russian"
+    await store.set_language(1, None)
+    assert await store.get_language(1) is None
 
 
 async def test_feature_toggle(store):

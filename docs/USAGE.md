@@ -14,7 +14,7 @@ Mention the bot anywhere it can read:
 @grokcord what's the difference between a Layer 1 and a Layer 2?
 ```
 
-Grok reads the last ~12 messages, so it knows what the conversation is about, and searches the web and X when it needs fresh info. Sources show up in small text under the answer.
+Grok reads the last few messages for context but answers *your* message, in your language. It searches the web and X only when it needs fresh info, and the answer streams in as it's written. Sources show up in small text under the answer.
 
 **Reply to ask about a message.** Hit *Reply* on any message and write:
 
@@ -111,6 +111,14 @@ To change who can use them: *Server Settings → Integrations → grokcord*.
 | **degen** | Crypto communities that want the vibe but honest answers |
 
 A channel persona overrides the server persona.
+
+### 🌍 Language
+By default Grok replies in the language each person writes in, and `/tldr` uses the chat's own language.
+```
+/grokcord language language:Russian      → always Russian
+/grokcord language other:Kazakh          → any language not in the list
+/grokcord language language:Auto         → back to matching each person
+```
 
 ### 💸 Spend caps
 ```

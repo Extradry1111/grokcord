@@ -23,6 +23,10 @@ CREATE TABLE IF NOT EXISTS disabled (
     feature  TEXT    NOT NULL,
     PRIMARY KEY (guild_id, feature)
 );
+CREATE TABLE IF NOT EXISTS language (
+    guild_id INTEGER PRIMARY KEY,
+    language TEXT    NOT NULL
+);
 CREATE TABLE IF NOT EXISTS usage (
     day      TEXT    NOT NULL,
     guild_id INTEGER NOT NULL,
@@ -71,6 +75,19 @@ class Store:
 
     async def clear_persona(self, guild_id: int, channel_id: int) -> None:
         await self.db.execute("DELETE FROM persona WHERE guild_id=? AND channel_id=?", (guild_id, channel_id))
+        await self.db.commit()
+
+    # ── language ──────────────────────────────────────────────
+    async def get_language(self, guild_id: int) -> str | None:
+        row = await self._one("SELECT language FROM language WHERE guild_id=?", guild_id)
+        return row[0] if row else None
+
+    async def set_language(self, guild_id: int, language: str | None) -> None:
+        if language:
+            await self.db.execute("INSERT INTO language VALUES (?, ?) ON CONFLICT(guild_id) "
+                                  "DO UPDATE SET language=excluded.language", (guild_id, language))
+        else:
+            await self.db.execute("DELETE FROM language WHERE guild_id=?", (guild_id,))
         await self.db.commit()
 
     # ── features ──────────────────────────────────────────────

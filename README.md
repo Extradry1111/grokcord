@@ -92,6 +92,8 @@ Set one for the whole server and override per channel: `#trading` gets the analy
 | 🧠 **Explain** | Right-click → **Explain with Grok** decodes slang, memes, jargon or code. |
 | 💸 **Spend caps** | Daily limits per member **and** per server, so nobody wakes up to a surprise bill. |
 | 🎛️ **Feature toggles** | Admins can switch any feature off per server (no images in a kids' server, for example). |
+| ⚡ **Streams in** | Answers appear within seconds and fill in live, like typing. |
+| 🌍 **Speaks your language** | Replies in whatever language people write in. Admins can pin one with `/grokcord language`. |
 | 🔒 **Safe by default** | The bot can't ping @everyone, needs no admin permissions, and stores **no message content**. |
 
 <br>
@@ -142,6 +144,7 @@ Or deploy to **Railway** in a few clicks: fork → *Deploy from GitHub* → add 
 | `/help` | everyone | All of the above, in Discord |
 | `/grokcord persona` | admins | Pick a built-in persona or write your own, per server or channel |
 | `/grokcord reset-persona` | admins | Back to default |
+| `/grokcord language` | admins | Auto (reply in each person's language) or pin one language |
 | `/grokcord limits` | admins | Daily caps per member and per server |
 | `/grokcord feature` | admins | Turn any feature on or off |
 | `/grokcord status` | admins | Model, persona, caps and disabled features at a glance |
@@ -160,6 +163,7 @@ All settings live in `.env` ([example](.env.example)):
 | `XAI_API_KEY` | required | Your xAI key |
 | `GROK_MODEL` | `grok-4.7` | Text, vision and search model |
 | `GROK_IMAGE_MODEL` | `grok-imagine-image-2.0` | Image model |
+| `GROK_REASONING` | `on` | Low reasoning effort for chat (fast), medium for fact-checks. `off` if your model rejects it |
 | `DAILY_USER_LIMIT` | `40` | Units per member per day |
 | `DAILY_GUILD_LIMIT` | `600` | Units per server per day |
 | `IMAGE_COST` | `5` | Units one image costs (a text answer = 1) |

@@ -89,3 +89,31 @@ async def test_run_interaction_charges_only_real_calls(bot):
     await run_interaction(bot, inter, "ask", 1, real_call)
     assert await bot.store.usage(1, 7) == (1, 42, 1)
     assert inter.followup.sent[0]["embeds"][0].footer.text == "grokcord · 2 units left today"
+
+
+class FakeChannel:
+    def __init__(self, msgs):
+        self.msgs = msgs
+
+    def history(self, limit, before):
+        async def gen():
+            for m in reversed(self.msgs[-limit:]):
+                yield m
+        return gen()
+
+
+def msg(author, content, uid=1):
+    return NS(author=NS(id=uid, display_name=author), content=content, attachments=[], embeds=[], reference=None)
+
+
+async def test_history_in_channel_is_background_only(bot):
+    bot._connection.user = NS(id=99)
+    channel = FakeChannel([msg("shuurai", "what does 18% under the medal mean?"), msg("grokcord", "old answer", 99)])
+    current = msg("koresh", "<@99> hey", 2)
+    current.channel = channel
+    history = await bot.build_history(current)
+    assert len(history) == 2
+    background = history[0]["content"][0]["text"]
+    assert "Do NOT answer them" in background and "shuurai: what does 18%" in background
+    assert "grokcord (you): old answer" in background
+    assert history[1]["content"][0]["text"] == "Message to answer, from koresh:\nhey"

@@ -31,6 +31,7 @@ class Config:
     dev_guild_id: int | None = None
     database_path: str = "grokcord.db"
     default_persona: str = "helper"
+    reasoning: bool = True
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -54,4 +55,5 @@ class Config:
             dev_guild_id=int(dev_guild) if dev_guild else None,
             database_path=os.getenv("DATABASE_PATH", "").strip() or cls.database_path,
             default_persona=os.getenv("DEFAULT_PERSONA", "").strip() or cls.default_persona,
+            reasoning=os.getenv("GROK_REASONING", "on").strip().lower() not in ("off", "0", "false", "no"),
         )

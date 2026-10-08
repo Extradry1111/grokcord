@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import logging
+import time
 from typing import Any
 
 import aiohttp
@@ -29,15 +30,26 @@ FEATURES = {
     "pulse": "/pulse live X search",
     "imagine": "/imagine images",
 }
-CHAT_CONTEXT = 12      # messages of channel context for @mention chat
+CHAT_CONTEXT = 8       # messages of channel context for @mention chat
 THREAD_CONTEXT = 40    # messages of memory inside a Grok thread
 IMAGE_TYPES = ("image/png", "image/jpeg", "image/webp", "image/gif")
+STREAM_EVERY = 1.1     # seconds between live edits while an answer streams in
+LANGUAGES = ["English", "Russian", "Ukrainian", "Spanish", "Portuguese", "French", "German", "Italian",
+             "Turkish", "Polish", "Arabic", "Hindi", "Indonesian", "Japanese", "Korean", "Chinese"]
 
 
 def image_urls(message: discord.Message) -> list[str]:
     urls = [a.url for a in message.attachments if (a.content_type or "").split(";")[0] in IMAGE_TYPES]
     urls += [e.image.url for e in message.embeds if e.image and e.image.url]
     return urls[:4]
+
+
+def locale_language(interaction: discord.Interaction) -> str:
+    """The user's Discord app language as a name Grok understands, e.g. 'Russian'."""
+    name = interaction.locale.name.replace("_", " ").title()
+    return {"American English": "English", "British English": "English",
+            "Spain Spanish": "Spanish", "Latin American Spanish": "Spanish",
+            "Brazil Portuguese": "Portuguese", "Taiwan Chinese": "Chinese"}.get(name, name)
 
 
 def strip_mention(text: str, user_id: int) -> str:
@@ -62,7 +74,8 @@ class Grokcord(discord.Client):
         intents.message_content = True
         super().__init__(intents=intents, allowed_mentions=discord.AllowedMentions.none())
         self.config = config
-        self.grok = grok or Grok(config.xai_api_key, config.model, config.image_model, config.base_url)
+        self.grok = grok or Grok(config.xai_api_key, config.model, config.image_model, config.base_url,
+                                 reasoning=config.reasoning)
         self.store = store or Store(config.database_path)
         self.tree = app_commands.CommandTree(self)
         register_commands(self)
@@ -112,6 +125,10 @@ class Grokcord(discord.Client):
             return self.config.default_persona
         return await self.store.get_persona(guild_id, channel_id, self.config.default_persona)
 
+    async def language(self, guild_id: int) -> str | None:
+        """The server's pinned reply language, or None to follow each person's language."""
+        return await self.store.get_language(guild_id) if guild_id else None
+
     # ── @mention chat ────────────────────────────────────────
     def wants_reply(self, message: discord.Message) -> bool:
         if message.author.bot or not self.user:
@@ -123,30 +140,45 @@ class Grokcord(discord.Client):
         return self.user in message.mentions and not message.mention_everyone
 
     async def build_history(self, message: discord.Message) -> list[dict[str, Any]]:
-        limit = THREAD_CONTEXT if isinstance(message.channel, discord.Thread) else CHAT_CONTEXT
+        """Responses-API input for an @mention.
+
+        In a normal channel the recent messages are folded into one background block, so Grok
+        answers the person who tagged it instead of whatever was asked earlier. In DMs and /chat
+        threads the conversation is replayed as real turns, so Grok remembers it.
+        """
+        conversation = isinstance(message.channel, (discord.Thread, discord.DMChannel))
+        limit = THREAD_CONTEXT if conversation else CHAT_CONTEXT
         earlier = [m async for m in message.channel.history(limit=limit, before=message)]
+        earlier.reverse()
+
         history: list[dict[str, Any]] = []
-        for m in reversed(earlier):
-            if not m.content and not m.embeds:
-                continue
-            if m.author.id == self.user.id:
-                text = m.content or "\n".join(e.description or "" for e in m.embeds)
-                history.append({"role": "assistant", "content": text})
-            else:
-                text = fmt.transcript_line(m.author.display_name, strip_mention(m.content, self.user.id),
-                                           len(m.attachments))
-                history.append({"role": "user", "content": user_content(text)})
+        if conversation:
+            for m in earlier:
+                if m.author.id == self.user.id:
+                    text = m.content or "\n".join(e.description or "" for e in m.embeds)
+                    if text:
+                        history.append({"role": "assistant", "content": text})
+                elif m.content:
+                    text = fmt.transcript_line(m.author.display_name, strip_mention(m.content, self.user.id),
+                                               len(m.attachments))
+                    history.append({"role": "user", "content": user_content(text)})
+        else:
+            lines = [fmt.transcript_line("grokcord (you)" if m.author.id == self.user.id else m.author.display_name,
+                                         strip_mention(m.content, self.user.id), len(m.attachments), limit=250)
+                     for m in earlier if m.content]
+            if lines:
+                history.append({"role": "user", "content": user_content(
+                    "Recent messages in this channel, for background only. Do NOT answer them:\n"
+                    + "\n".join(lines))})
 
         prompt = strip_mention(message.content, self.user.id) or "(no text, see the image)"
         images = image_urls(message)
         ref = message.reference.resolved if message.reference else None
         if isinstance(ref, discord.Message):
-            prompt = (f"[Replying to {ref.author.display_name}: \"{ref.content[:1500]}\"]\n"
-                      f"{message.author.display_name}: {prompt}")
+            prompt = f'[Replying to {ref.author.display_name}: "{ref.content[:1500]}"]\n{prompt}'
             images = image_urls(ref) + images
-        else:
-            prompt = f"{message.author.display_name}: {prompt}"
-        history.append({"role": "user", "content": user_content(prompt, images[:4])})
+        history.append({"role": "user", "content": user_content(
+            f"Message to answer, from {message.author.display_name}:\n{prompt}", images[:4])})
         return history
 
     async def on_message(self, message: discord.Message) -> None:
@@ -157,20 +189,42 @@ class Grokcord(discord.Client):
         if error:
             await message.reply(error, mention_author=False, delete_after=20)
             return
-        async with message.channel.typing():
-            try:
-                history = await self.build_history(message)
-                answer = await self.grok.chat(await self.persona(gid, message.channel.id), history, search=True)
-            except Exception as exc:  # noqa: BLE001 - surface every failure to the user
-                log.exception("chat failed")
-                await message.reply(friendly_error(exc), mention_author=False)
+        reply: discord.Message | None = None
+        last_edit = 0.0
+
+        async def on_text(text: str) -> None:
+            nonlocal reply, last_edit
+            if time.monotonic() - last_edit < STREAM_EVERY or not text.strip():
                 return
+            preview = (text[:1900] + " …") if len(text) > 1900 else text + " ▌"
+            last_edit = time.monotonic()
+            if reply is None:
+                reply = await message.reply(preview, mention_author=False, suppress_embeds=True)
+            else:
+                await reply.edit(content=preview, suppress=True)
+
+        try:
+            async with message.channel.typing():
+                history = await self.build_history(message)
+                answer = await self.grok.chat_stream(
+                    await self.persona(gid, message.channel.id), history, on_text=on_text, search=True,
+                    language=await self.language(gid))
+        except Exception as exc:  # noqa: BLE001 - surface every failure to the user
+            log.exception("chat failed")
+            if reply is not None:
+                await reply.edit(content=friendly_error(exc))
+            else:
+                await message.reply(friendly_error(exc), mention_author=False)
+            return
         await self.store.add_usage(gid, message.author.id, 1, answer.tokens)
         body = answer.text
         if answer.sources:
-            body = f"{body}\n\n-# {fmt.sources_line(answer.sources)}"
+            body = f"{body}\n-# {fmt.sources_line(answer.sources[:4], bold=False)}"
         chunks = fmt.split_text(body)
-        await message.reply(chunks[0], mention_author=False, suppress_embeds=True)
+        if reply is None:
+            await message.reply(chunks[0], mention_author=False, suppress_embeds=True)
+        else:
+            await reply.edit(content=chunks[0], suppress=True)
         for chunk in chunks[1:]:
             await message.channel.send(chunk, suppress_embeds=True)
 
@@ -213,13 +267,14 @@ def register_commands(bot: Grokcord) -> None:
     # ── right-click → Apps ───────────────────────────────────
     @tree.context_menu(name="Fact-check with Grok")
     async def fact_check(interaction: discord.Interaction, message: discord.Message) -> None:
+        gid = interaction.guild_id or 0
         if not message.content and not image_urls(message):
             await interaction.response.send_message("Nothing to check in that message.", ephemeral=True)
             return
 
         async def work():
             result = await bot.grok.fact_check(message.content, message.author.display_name,
-                                               image_urls(message))
+                                               image_urls(message), language=await bot.language(gid))
             return fmt.verdict_embeds(result.verdict, result.text, result.sources, message.jump_url), None, \
                 result.tokens
 
@@ -228,7 +283,9 @@ def register_commands(bot: Grokcord) -> None:
     @tree.context_menu(name="Explain with Grok")
     async def explain(interaction: discord.Interaction, message: discord.Message) -> None:
         async def work():
-            result = await bot.grok.explain(message.content or "(image only)", image_urls(message))
+            result = await bot.grok.explain(message.content or "(image only)",
+                                            await bot.language(interaction.guild_id or 0)
+                                            or locale_language(interaction), image_urls(message))
             return fmt.answer_embeds(result.text, result.sources, title="🧠 Explained"), None, result.tokens
 
         await run_interaction(bot, interaction, "explain", 1, work, ephemeral=True)
@@ -238,7 +295,7 @@ def register_commands(bot: Grokcord) -> None:
         if not message.content:
             await interaction.response.send_message("That message has no text to translate.", ephemeral=True)
             return
-        language = interaction.locale.name.replace("_", " ").title()
+        language = locale_language(interaction)
 
         async def work():
             result = await bot.grok.translate(message.content, language)
@@ -258,7 +315,8 @@ def register_commands(bot: Grokcord) -> None:
             urls = [image.url] if image and (image.content_type or "").split(";")[0] in IMAGE_TYPES else []
             text = f"{interaction.user.display_name}: {question}"
             result = await bot.grok.chat(await bot.persona(gid, cid),
-                                         [{"role": "user", "content": user_content(text, urls)}], search=search)
+                                         [{"role": "user", "content": user_content(text, urls)}], search=search,
+                                         language=await bot.language(gid))
             return fmt.answer_embeds(result.text, result.sources, title=question[:250]), None, result.tokens
 
         await run_interaction(bot, interaction, "ask", 1, work, ephemeral=private)
@@ -281,8 +339,9 @@ def register_commands(bot: Grokcord) -> None:
             if len(lines) < 3:
                 return [discord.Embed(description="Not enough conversation here to summarise yet.",
                                       color=fmt.BRAND)], None, None
-            result = await bot.grok.tldr(fmt.clamp_transcript(lines), getattr(channel, "name", "chat"))
-            title = f"📜 TL;DR of the last {len(lines)} messages"
+            result = await bot.grok.tldr(fmt.clamp_transcript(lines), getattr(channel, "name", "chat"),
+                                         language=await bot.language(interaction.guild_id or 0))
+            title = f"📜 TL;DR · {len(lines)} 💬"
             return fmt.answer_embeds(result.text, [], title=title), None, result.tokens
 
         await run_interaction(bot, interaction, "tldr", 1, work, ephemeral=private)
@@ -297,7 +356,8 @@ def register_commands(bot: Grokcord) -> None:
         window = hours.value if hours else 24
 
         async def work():
-            result = await bot.grok.pulse(topic, window)
+            result = await bot.grok.pulse(topic, window, await bot.language(interaction.guild_id or 0)
+                                          or locale_language(interaction))
             return fmt.answer_embeds(result.text, result.sources, title=f"📡 Pulse: {topic[:200]}"), None, \
                 result.tokens
 
@@ -427,6 +487,27 @@ def register_commands(bot: Grokcord) -> None:
         state = "on ✅" if enabled else "off 🚫"
         await interaction.response.send_message(f"**{feature.name}** is now {state}.", ephemeral=True)
 
+    @admin.command(name="language", description="Pick the language Grok replies in (default: each person's own).")
+    @app_commands.describe(language="Auto = reply in whatever language people write in",
+                           other="Any other language, e.g. Kazakh")
+    @app_commands.choices(language=[app_commands.Choice(name="Auto (match each person)", value="auto")]
+                          + [app_commands.Choice(name=n, value=n) for n in LANGUAGES])
+    async def language_cmd(interaction: discord.Interaction, language: app_commands.Choice[str] | None = None,
+                           other: app_commands.Range[str, 2, 40] | None = None) -> None:
+        gid, _cid, _uid = ids(interaction)
+        if other:
+            value = other.strip()
+        elif language:
+            value = language.value
+        else:
+            current = await bot.store.get_language(gid) or "Auto"
+            await interaction.response.send_message(f"🌍 Language: **{current}**", ephemeral=True)
+            return
+        await bot.store.set_language(gid, None if value == prompts.LANGUAGE_AUTO else value)
+        label = "Auto: Grok replies in each person's language" if value == prompts.LANGUAGE_AUTO \
+            else f"Grok now always replies in **{value}**"
+        await interaction.response.send_message(f"🌍 {label}.", ephemeral=True)
+
     @admin.command(name="status", description="Show grokcord's settings for this server.")
     async def status(interaction: discord.Interaction) -> None:
         gid, cid, _uid = ids(interaction)
@@ -438,6 +519,7 @@ def register_commands(bot: Grokcord) -> None:
         embed = discord.Embed(title="grokcord status", color=fmt.BRAND)
         embed.add_field(name="Model", value=f"`{bot.config.model}`", inline=True)
         embed.add_field(name="Persona here", value=label, inline=True)
+        embed.add_field(name="Language", value=await bot.store.get_language(gid) or "Auto", inline=True)
         embed.add_field(name="Daily caps", value=f"{user_limit}/member · {guild_limit}/server", inline=False)
         embed.add_field(name="Turned off", value=", ".join(FEATURES[f] for f in off if f in FEATURES) or "Nothing",
                         inline=False)
