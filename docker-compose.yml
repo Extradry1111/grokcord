@@ -1,0 +1,12 @@
+services:
+  grokcord:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_PATH: /data/grokcord.db
+    volumes:
+      - grokcord-data:/data
+    restart: unless-stopped
+
+volumes:
+  grokcord-data:

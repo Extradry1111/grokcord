@@ -1,0 +1,26 @@
+[project]
+name = "grokcord"
+version = "0.1.0"
+description = "Grok in your Discord server: fact-checks, live X pulse, /tldr, vision, images, personas and spend caps."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+  "discord.py>=2.4,<3",
+  "openai>=1.60",
+  "aiosqlite>=0.20",
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+grokcord = "grokcord.__main__:main"
+
+[tool.setuptools]
+packages = ["grokcord"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

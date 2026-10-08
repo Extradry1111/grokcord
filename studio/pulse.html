@@ -1,0 +1,77 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="scene.css">
+<style>
+  .input { position: absolute; left: 16px; right: 16px; bottom: 12px; height: 44px; background: #23242f; border-radius: 10px;
+    display: flex; align-items: center; padding: 0 16px; font: 400 15px "UI"; color: #e6e6ee; gap: 8px; }
+  .opt { font: 600 13px "UI"; background: #2f3140; padding: 3px 8px; border-radius: 6px; color: #c9cdfb; }
+  .opt b { color: #fff; font-weight: 600; }
+  .body { position: absolute; left: 0; right: 0; top: 60px; bottom: 64px; padding: 0 0; }
+  .embed { max-width: none; margin-right: 18px; border-left-color: var(--blurple); }
+  .grid { display: grid; grid-template-columns: 210px 1fr; gap: 22px; margin-top: 6px; }
+  .gauge { position: relative; width: 210px; height: 120px; }
+  .gauge svg { width: 210px; height: 120px; }
+  .needle { position: absolute; left: 105px; top: 104px; width: 4px; height: 82px; margin-left: -2px; background: #fff; border-radius: 4px; transform-origin: 50% 100%; top: 22px; }
+  .hub { position: absolute; left: 95px; top: 94px; width: 20px; height: 20px; border-radius: 50%; background: #fff; }
+  .mood { font: 800 26px "Brico"; margin-top: 6px; text-align: center; color: var(--lime); }
+  .mood small { display: block; font: 400 12px "Mono"; color: var(--muted); letter-spacing: .1em; }
+  .take { font: 600 15px/1.4 "UI"; color: #fff; margin-bottom: 8px; }
+  .row { display: flex; gap: 10px; align-items: flex-start; font: 400 14px/1.45 "UI"; color: #d4d4de; margin: 7px 0; }
+  .row .h { flex: none; font: 600 12px "Mono"; color: #8ab4ff; background: rgba(138,180,255,.1); padding: 2px 6px; border-radius: 5px; margin-top: 1px; }
+  .bar { height: 6px; border-radius: 3px; background: #2a2b38; margin-top: 12px; overflow: hidden; display: flex; }
+  .bar i { display: block; height: 100%; }
+  .legend { display: flex; justify-content: space-between; font: 400 11px "Mono"; color: var(--muted); margin-top: 5px; }
+</style></head><body><div class="stage">
+  <div class="dots"></div>
+  <div class="label"><span class="n">03</span><span class="t">/pulse: the timeline, live</span><span class="s">real-time X search, with sources</span></div>
+  <div class="chat">
+    <div class="top"><span class="hash">#</span>gaming-news<span class="dim">· 842 online</span></div>
+    <div class="body" style="top:52px">
+      <div class="msg"><div class="av" style="background:#8ab4ff">J</div><div><div class="who">jules <time>Today at 21:06</time></div><div class="txt">trailer 3 just dropped. is the internet happy or mad?? 👀</div></div></div>
+      <div class="msg" id="m"><div class="av av-orb"></div><div style="flex:1">
+        <div class="who">grokcord <span class="tag-bot">APP</span> <time>Today at 21:07</time></div>
+        <div class="thinking" id="think"><span>Reading posts on X from the last 24 hours</span><span class="dots3"><i></i><i></i><i></i></span><span class="pill mono" id="cnt">0 posts</span></div>
+        <div class="embed" id="emb"><h4>📡 Pulse: GTA 6 trailer 3</h4>
+          <div class="grid">
+            <div><div class="gauge"><svg viewBox="0 0 210 120"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#ff4d6d"/><stop offset=".5" stop-color="#ffb02e"/><stop offset="1" stop-color="#c8ff2e"/></linearGradient></defs>
+              <path d="M15 105 A90 90 0 0 1 195 105" fill="none" stroke="#2a2b38" stroke-width="16" stroke-linecap="round"/>
+              <path id="arc" d="M15 105 A90 90 0 0 1 195 105" fill="none" stroke="url(#g)" stroke-width="16" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"/></svg>
+              <div class="needle" id="needle"></div><div class="hub"></div></div>
+              <div class="mood" id="mood">HYPED<small>MOOD · 24H</small></div>
+              <div class="bar"><i id="b1" style="background:#c8ff2e"></i><i id="b2" style="background:#ffb02e"></i><i id="b3" style="background:#ff4d6d"></i></div>
+              <div class="legend"><span>hyped 71%</span><span>meh 18%</span><span>mad 11%</span></div></div>
+            <div><div class="take" id="tk">The take that's winning: the trailer looks insane, but people are worried about another delay.</div>
+              <div class="row" id="r1"><span class="h">@leonida_daily</span>frame-by-frame breakdown of the new map going viral</div>
+              <div class="row" id="r2"><span class="h">@pc_gamer_hq</span>still no PC date, and that's the top complaint</div>
+              <div class="row" id="r3"><span class="h">@insider_watch</span>"price leak" is unverified; no official source yet</div>
+              <div class="src" id="src" style="margin-top:10px"><b>Sources:</b> 1. x.com · 2. x.com · 3. rockstargames.com</div></div>
+          </div><div class="foot">grokcord · 37 units left today</div></div>
+      </div></div>
+    </div>
+    <div class="input"><span id="cmd"></span><span class="opt" id="o1">topic: <b>GTA 6 trailer 3</b></span><span class="opt" id="o2">hours: <b>Last 24 hours</b></span></div>
+  </div>
+  <div class="grain"></div>
+</div>
+<script src="anim.js"></script>
+<script>
+const D = 8;
+window.onSeek = (ms) => {
+  const t = ms / 1000;
+  loopFade(t, D);
+  const cmd = $("#cmd"), typed = "/pulse";
+  cmd.textContent = t < 2.0 ? typed.slice(0, Math.round(typed.length * seg(t, .3, .8))) : "";
+  cmd.classList.toggle("caret", t < 2.0);
+  $("#o1").style.opacity = t < 2.0 ? seg(t, .9, 1.1) : 0; $("#o2").style.opacity = t < 2.0 ? seg(t, 1.3, 1.5) : 0;
+  enter($("#m"), t, 2.1);
+  $(".input").style.transform = `translateY(${easeInOut(seg(t, 3.3, 3.7)) * 80}px)`;
+  $("#think").style.display = t < 3.6 ? "flex" : "none";
+  $$(".dots3 i").forEach((d, i) => d.style.opacity = .25 + .75 * Math.abs(Math.sin((t * 4) - i * .6)));
+  $("#cnt").textContent = Math.round(easeOut(seg(t, 2.3, 3.5)) * 4812).toLocaleString("en") + " posts";
+  const emb = $("#emb"); emb.style.display = t >= 3.6 ? "block" : "none"; enter(emb, t, 3.6, .3);
+  const p = back(seg(t, 3.9, 4.9));
+  $("#arc").style.strokeDashoffset = 283 - 283 * .78 * Math.min(p, 1.05);
+  $("#needle").style.transform = `rotate(${-90 + 180 * .78 * p}deg)`;
+  $("#mood").style.opacity = seg(t, 4.6, 4.8);
+  $("#b1").style.width = 71 * easeOut(seg(t, 4.4, 5.0)) + "%"; $("#b2").style.width = 18 * easeOut(seg(t, 4.6, 5.1)) + "%"; $("#b3").style.width = 11 * easeOut(seg(t, 4.8, 5.2)) + "%";
+  enter($("#tk"), t, 4.3, .3, 6); enter($("#r1"), t, 4.7, .3, 6); enter($("#r2"), t, 5.0, .3, 6); enter($("#r3"), t, 5.3, .3, 6); enter($("#src"), t, 5.6, .3, 6);
+};
+</script></body></html>

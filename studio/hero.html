@@ -1,0 +1,77 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+  .stage { background:
+      radial-gradient(70% 70% at 78% 120%, rgba(88,101,242,.75), transparent 60%),
+      radial-gradient(40% 40% at 95% 0%, rgba(200,255,46,.12), transparent 70%),
+      var(--void); }
+  .left { position: absolute; left: 70px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; z-index: 5; }
+  .kicker { font: 700 15px "Mono"; letter-spacing: .22em; color: var(--lime); text-transform: uppercase; display: flex; gap: 10px; align-items: center; }
+  .kicker i { width: 10px; height: 10px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 16px var(--lime); animation: pulse 1.25s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  h1 { font: 800 152px/0.86 "Brico"; letter-spacing: -.055em; margin: 18px 0 18px -6px; }
+  h1 span { display: inline-block; animation: rise 5s cubic-bezier(.2,.8,.2,1) infinite; }
+  h1 .c { color: var(--lime); }
+  @keyframes rise { 0% { transform: translateY(0); } 100% { transform: translateY(0); } }
+  .tag { font: 400 27px/1.25 "Brico"; color: #c9c9d6; max-width: 520px; }
+  .tag b { color: #fff; font-weight: 600; }
+  .chips { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 9px; max-width: 560px; }
+  .chip { font: 700 12.5px "Mono"; letter-spacing: .06em; padding: 8px 12px; border-radius: 999px; border: 1px solid #34354a; color: #d7d8e6; background: rgba(255,255,255,.03); }
+  .chip.on { background: var(--lime); color: #0b0b12; border-color: var(--lime); }
+
+  .right { position: absolute; right: 70px; top: 50%; width: 470px; height: 470px; transform: translateY(-50%); }
+  .float { position: absolute; left: 50%; top: 50%; animation: float 5s ease-in-out infinite; }
+  @keyframes float { 0%,100% { transform: translate(-50%,-50%) translateY(-8px); } 50% { transform: translate(-50%,-50%) translateY(10px); } }
+  .orb { --s: 330px; }
+  .tail { position: absolute; width: 104px; height: 104px; left: 2px; bottom: -26px;
+    background: linear-gradient(160deg, #e4ff7a, #c8ff2e 45%, #8fc410); clip-path: polygon(48% 0, 100% 34%, 0 100%); }
+  .face { animation: look 5s cubic-bezier(.6,0,.3,1) infinite; transform-origin: 50% 49%; }
+  @keyframes look {
+    0%, 8% { transform: translate(0,0) scaleY(1); }
+    18%, 34% { transform: translate(-30px, 10px) scaleY(1); }
+    44%, 58% { transform: translate(26px, -12px) scaleY(1); }
+    66% { transform: translate(0, 0) scaleY(1); }
+    69% { transform: translate(0, 2px) scaleY(.08); }
+    72%, 100% { transform: translate(0,0) scaleY(1); }
+  }
+  .shadow { position: absolute; left: 50%; top: 82%; width: 260px; height: 40px; transform: translateX(-50%);
+    background: radial-gradient(ellipse, rgba(0,0,0,.7), transparent 70%); animation: sh 5s ease-in-out infinite; }
+  @keyframes sh { 0%,100% { transform: translateX(-50%) scale(1.05); opacity: .9 } 50% { transform: translateX(-50%) scale(.9); opacity: .6 } }
+
+  .bub { position: absolute; z-index: 6; font: 500 15px "UI"; padding: 10px 14px; border-radius: 14px; white-space: nowrap;
+    background: rgba(26,27,35,.92); border: 1px solid #333447; box-shadow: 0 18px 40px rgba(0,0,0,.5); display: flex; gap: 8px; align-items: center; }
+  .bub .m { color: #c9cdfb; background: rgba(88,101,242,.32); border-radius: 4px; padding: 0 4px; }
+  .bub.v { font: 800 16px "Brico"; letter-spacing: .04em; background: var(--coral); color: #fff; border: none; transform: rotate(-6deg); }
+  .bub.l { background: var(--lime); color: #0b0b12; border: none; font: 700 13px "Mono"; }
+  .b1 { left: -150px; top: 30px; animation: b1 5s ease-in-out infinite; }
+  .b2 { right: -40px; top: 70px; animation: b2 5s ease-in-out infinite; }
+  .b3 { left: -170px; bottom: 0px; animation: b3 5s ease-in-out infinite; }
+  .b4 { right: -20px; bottom: 40px; animation: b4 5s ease-in-out infinite; }
+  @keyframes b1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(6px,-10px); } }
+  @keyframes b2 { 0%,100% { transform: rotate(-6deg) translate(0,0) scale(1); } 20% { transform: rotate(-6deg) scale(1.12); } 30%,100% { transform: rotate(-6deg) scale(1); } 50% { transform: rotate(-6deg) translate(-6px,8px); } }
+  @keyframes b3 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-6px,8px); } }
+  @keyframes b4 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(8px,-6px); } }
+  .handle { position: absolute; right: 26px; bottom: 22px; font: 400 13px "Mono"; color: #6e6f86; letter-spacing: .1em; z-index: 6; }
+</style></head><body><div class="stage">
+  <div class="dots"></div>
+  <div class="left">
+    <div class="kicker"><i></i>open source · self-host in 10 min</div>
+    <h1><span>grok</span><span class="c">cord</span></h1>
+    <div class="tag">Grok, living in your Discord. <b>Fact-checks, live X pulse, TL;DRs, vision & images.</b></div>
+    <div class="chips">
+      <span class="chip on">RIGHT-CLICK FACT-CHECK</span><span class="chip">/TLDR</span><span class="chip">/PULSE</span>
+      <span class="chip">/IMAGINE</span><span class="chip">6 PERSONAS</span><span class="chip">SPEND CAPS</span>
+    </div>
+  </div>
+  <div class="right">
+    <div class="shadow"></div>
+    <div class="float">
+      <div class="tail"></div>
+      <div class="orb rim"><div class="face"><div class="eye l"></div><div class="eye r"></div></div></div>
+    </div>
+    <div class="bub b1"><span class="m">@grokcord</span> is this true?</div>
+    <div class="bub v b2">❌ FALSE</div>
+    <div class="bub b3">📜 /tldr · 312 messages → 6 lines</div>
+    <div class="bub l b4">/pulse GTA 6</div>
+  </div>
+  <div class="grain"></div>
+</div></body></html>

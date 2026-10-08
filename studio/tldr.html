@@ -1,0 +1,80 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="scene.css">
+<style>
+  .feedwrap { position: absolute; left: 0; right: 0; top: 46px; bottom: 64px; overflow: hidden; }
+  .feed { position: absolute; left: 0; right: 0; top: 0; }
+  .feed .msg { padding: 5px 18px; }
+  .feed .av { width: 32px; height: 32px; font-size: 13px; }
+  .feed .txt { font-size: 14px; }
+  .badge { position: absolute; top: 56px; left: 50%; transform: translateX(-50%); z-index: 5; background: var(--blurple); color: #fff;
+    font: 600 13px "UI"; padding: 6px 14px; border-radius: 999px; box-shadow: 0 8px 20px rgba(0,0,0,.4); }
+  .input { position: absolute; left: 16px; right: 16px; bottom: 12px; height: 44px; background: #23242f; border-radius: 10px;
+    display: flex; align-items: center; padding: 0 16px; font: 400 15px "UI"; color: #e6e6ee; gap: 8px; z-index: 6; }
+  .input .ph { color: #6f7085; }
+  .opt { font: 600 13px "UI"; background: #2f3140; padding: 3px 8px; border-radius: 6px; color: #c9cdfb; }
+  .pop { position: absolute; left: 16px; right: 16px; bottom: 62px; background: #111218; border: 1px solid #2c2d3c; border-radius: 10px; padding: 8px; z-index: 7; }
+  .pop .row { display: flex; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 8px; background: #22233a; }
+  .pop .row b { font: 700 15px "UI"; } .pop .row span { color: var(--muted); font-size: 14px; }
+  .card { position: absolute; left: 0; right: 0; bottom: 64px; top: 46px; z-index: 8; background: linear-gradient(rgba(26,27,35,.0), #1a1b23 18%); padding: 60px 18px 8px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .card .embed { max-width: none; border-left-color: var(--lime); box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+  .eph { font: 400 12px "UI"; color: var(--muted); margin-top: 6px; }
+  .eph b { color: #8ab4ff; font-weight: 500; }
+  .card p { font: 400 14px/1.5 "UI"; color: #d4d4de; margin: 4px 0 8px; }
+  .card h5 { font: 700 13px "UI"; color: #fff; margin-top: 6px; }
+</style></head><body><div class="stage">
+  <div class="dots"></div>
+  <div class="label"><span class="n">02</span><span class="t">/tldr: what did I miss?</span><span class="s">300 messages → 20 seconds of reading</span></div>
+  <div class="chat">
+    <div class="top"><span class="hash">#</span>general<span class="dim">· Valorant Club</span></div>
+    <div class="badge" id="badge">312 new messages since 09:14</div>
+    <div class="feedwrap"><div class="feed" id="feed"></div></div>
+    <div class="pop" id="pop"><div class="row"><b>/tldr</b><span>What did I miss? Summarise the recent messages in this channel.</span></div></div>
+    <div class="input"><span id="cmd" class="ph">Message #general</span><span class="opt" id="o1">messages: 300</span></div>
+    <div class="card" id="card"><div class="msg" style="padding:0"><div class="av av-orb"></div><div style="flex:1">
+      <div class="who">grokcord <span class="tag-bot">APP</span> <time>Today at 18:40</time></div>
+      <div class="embed"><h4>📜 TL;DR of the last 300 messages</h4>
+        <p id="t1"><b>TL;DR</b> Saturday's 5v5 tournament is on: 8 teams, Ascent map pool, prizes paid by Nova.</p>
+        <h5 id="t2">What happened</h5>
+        <ul><li id="t3"><b>Nova</b> confirmed the $150 prize pool and the 18:00 UTC start.</li>
+            <li id="t4"><b>lilo</b> and <b>dex</b> argued about banning Chamber; vote ended 14-9 to keep him.</li>
+            <li id="t5"><b>mods</b> moved scrims to #scrims-only after the spam.</li></ul>
+        <h5 id="t6">Action items</h5>
+        <ul><li id="t7">Captains: register your team in #signups before Friday 20:00.</li></ul>
+        <div class="foot">grokcord · 38 units left today</div></div>
+      <div class="eph">👁 Only you can see this · <b>Dismiss message</b></div></div></div></div>
+  </div>
+  <div class="grain"></div>
+</div>
+<script src="anim.js"></script>
+<script>
+const names = [["Nova", "#35e08a"], ["lilo", "#ff7ab6"], ["dex", "#ffb02e"], ["sage_main", "#8ab4ff"], ["mira", "#c8ff2e"], ["tofu", "#b18cff"]];
+const lines = ["ok who's in for saturday??", "chamber is SO broken rn", "prize pool confirmed btw", "can we not ban chamber pls",
+  "scrims at 7?", "lmaooo", "vote in the poll ⬆️", "ascent only or full pool?", "i'll pay for prizes", "ggs last night",
+  "who took my spot 😤", "mods pls", "registering now", "18:00 utc works", "keep chamber 🗳️", "need a 5th for team B"];
+const feed = document.getElementById("feed");
+for (let i = 0; i < 60; i++) {
+  const [n, c] = names[(i * 7) % names.length];
+  feed.insertAdjacentHTML("beforeend", `<div class="msg"><div class="av" style="background:${c}">${n[0].toUpperCase()}</div><div><div class="who">${n} <time>Today at ${9 + (i >> 3)}:${String((i * 7) % 60).padStart(2, "0")}</time></div><div class="txt">${lines[(i * 5) % lines.length]}</div></div></div>`);
+}
+const D = 8;
+window.onSeek = (ms) => {
+  const t = ms / 1000;
+  loopFade(t, D);
+  // fast scroll of the backlog
+  const scroll = easeInOut(seg(t, 0, 2.6)) * 2300;
+  feed.style.transform = `translateY(${-scroll}px)`;
+  feed.style.filter = `blur(${Math.sin(Math.PI * seg(t, 0, 2.6)) * 2.2}px)`;
+  $("#badge").style.opacity = 1 - seg(t, 2.4, 2.7);
+  // typing the command
+  const typed = "/tldr";
+  const cmd = $("#cmd");
+  if (t < 2.7) { cmd.textContent = "Message #general"; cmd.className = "ph"; }
+  else { cmd.className = ""; cmd.textContent = typed.slice(0, Math.round(typed.length * seg(t, 2.7, 3.1))); }
+  $("#pop").style.opacity = t > 2.9 && t < 3.6 ? 1 : 0;
+  $("#o1").style.opacity = seg(t, 3.4, 3.6) * (t < 4.0 ? 1 : 0);
+  // squish the feed and show the card
+  feed.parentElement.style.opacity = 1 - .85 * seg(t, 4.0, 4.4);
+  const card = $("#card"); enter(card, t, 4.1, .4, 30);
+  ["#t1", "#t2", "#t3", "#t4", "#t5", "#t6", "#t7"].forEach((s, i) => enter($(s), t, 4.45 + i * .22, .25, 6));
+};
+</script></body></html>

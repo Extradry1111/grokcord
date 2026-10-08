@@ -1,0 +1,4 @@
+discord.py>=2.4,<3
+openai>=1.60
+aiosqlite>=0.20
+python-dotenv>=1.0

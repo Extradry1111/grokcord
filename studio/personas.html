@@ -1,0 +1,94 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="scene.css">
+<style>
+  .orbbox { position: absolute; left: 70px; top: 170px; width: 300px; height: 300px; }
+  .orb { --s: 260px; position: absolute; left: 20px; top: 20px; }
+  .face { position: absolute; inset: 0; transform-origin: 50% 49%; }
+  .acc { position: absolute; opacity: 0; font-size: 70px; z-index: 4; }
+  .glasses { position: absolute; left: 62px; top: 92px; width: 140px; height: 70px; z-index: 3; opacity: 0; }
+  .glasses i { position: absolute; top: 0; width: 64px; height: 64px; border-radius: 50%; border: 6px solid #0b0b12; }
+  .glasses i:first-child { left: 0; } .glasses i:last-child { left: 76px; }
+  .glasses b { position: absolute; left: 58px; top: 26px; width: 24px; height: 6px; background: #0b0b12; }
+  .laser { position: absolute; height: 10px; width: 640px; left: 0; top: 0; transform-origin: 0 50%; opacity: 0; z-index: 2;
+    background: linear-gradient(90deg, #fff, #ff2e4d 8%, rgba(255,46,77,.6) 60%, transparent); box-shadow: 0 0 24px #ff2e4d; border-radius: 6px; }
+  .q { position: absolute; left: 420px; top: 120px; right: 40px; }
+  .q .bub { display: inline-block; background: #23242f; border: 1px solid #34354a; padding: 10px 14px; border-radius: 14px 14px 14px 4px; font: 500 16px "UI"; }
+  .name { position: absolute; left: 420px; top: 200px; font: 800 64px/1 "Brico"; letter-spacing: -.03em; }
+  .name small { display: block; font: 400 14px "Mono"; color: var(--muted); letter-spacing: .08em; margin-top: 10px; }
+  .ans { position: absolute; left: 420px; top: 320px; right: 40px; background: #1d1e28; border: 1px solid #2f3042; border-left: 4px solid var(--lime);
+    border-radius: 10px; padding: 16px 18px; font: 400 17px/1.5 "UI"; color: #e3e3ec; min-height: 110px; }
+  .ticks { position: absolute; left: 420px; bottom: 40px; display: flex; gap: 8px; }
+  .ticks i { width: 34px; height: 5px; border-radius: 3px; background: #2c2d3c; }
+  .ticks i.on { background: var(--lime); }
+</style></head><body><div class="stage">
+  <div class="dots"></div>
+  <div class="label"><span class="n">04</span><span class="t">6 personas, one Grok</span><span class="s">/grokcord persona · per server or per channel</span></div>
+  <div class="orbbox" id="ob">
+    <div class="orb rim" id="orb"><div class="face" id="face"><div class="eye l" id="el"></div><div class="eye r" id="er"></div></div>
+      <div class="glasses" id="gl"><i></i><b></b><i></i></div></div>
+    <div class="laser" id="la1"></div><div class="laser" id="la2"></div>
+    <div class="acc" id="a-roast" style="left:-10px;top:-20px">🔥</div>
+    <div class="acc" id="a-teacher" style="left:105px;top:-35px">🎓</div>
+    <div class="acc" id="a-mod" style="left:220px;top:-10px">🛡️</div>
+    <div class="acc" id="a-analyst" style="left:220px;top:-10px">📊</div>
+    <div class="acc" id="a-helper" style="left:225px;top:-10px">✨</div>
+    <div class="acc" id="a-degen" style="left:-14px;top:-14px">🐸</div>
+  </div>
+  <div class="q"><span class="bub"><span class="mention">@grokcord</span> should I ape into $FROG? 🐸</span></div>
+  <div class="name" id="nm">helper<small id="sub">friendly · clear · straight to the point</small></div>
+  <div class="ans" id="ans"></div>
+  <div class="ticks" id="ticks"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="grain"></div>
+</div>
+<script src="anim.js"></script>
+<script>
+const P = [
+  ["helper", "friendly · clear · straight to the point", "#c8ff2e",
+   "Quick check first: $FROG has no audit and ~80% of supply sits in 3 wallets. If you buy, only use money you're fine losing."],
+  ["analyst", "numbers first · bull vs bear · no hype", "#8ab4ff",
+   "Liquidity $210k, volume −60% w/w, top-3 wallets hold 80%. Bull: memes run. Bear: one whale exits and it's over."],
+  ["roast", "savage, never cruel", "#ff4d6d",
+   "Ser, you're asking a Discord bot whether to buy a frog. The frog is not a retirement plan. 🔥"],
+  ["teacher", "explains it like you're 12", "#ffb02e",
+   "Picture a lemonade stand where 3 kids own almost all the lemons. If they sell, the price crashes. That's $FROG."],
+  ["mod", "calm · neutral · de-escalates", "#35e08a",
+   "Friendly reminder: no shilling in #general (rule 4). Happy to break down the risks in #trading."],
+  ["degen", "crypto-native · still honest", "#ff2e4d",
+   "gm ser. 80% in 3 wallets is rug-shaped. ngmi if you size big. Paper hands are a strategy here. 🐸"],
+];
+const D = 8.4, S = 1.4; // seconds per persona
+window.onSeek = (ms) => {
+  const t = ms / 1000;
+  loopFade(t, D, .3);
+  const i = Math.min(P.length - 1, Math.floor(t / S));
+  const lt = t - i * S;
+  const [name, sub, color, ans] = P[i];
+  const nm = $("#nm"); nm.firstChild.textContent = name; nm.style.color = color; $("#sub").textContent = sub;
+  enter(nm, lt, 0, .25, 10);
+  const a = $("#ans"); a.style.borderLeftColor = color; a.dataset.full = ans; type(a, lt, .1, .95);
+  $$("#ticks i").forEach((el, k) => el.classList.toggle("on", k <= i));
+  // orb pop on switch
+  const pop = back(seg(lt, 0, .35)); $("#ob").style.transform = `scale(${.86 + .14 * pop})`;
+  // face per persona
+  const face = $("#face"), el = $("#el"), er = $("#er");
+  let lrot = -24, rrot = -24, sy = 1, dx = 0, dy = 0;
+  if (name === "roast") { lrot = 30; rrot = -30; }
+  if (name === "mod") { sy = .45; }
+  if (name === "teacher") { dy = -6; }
+  if (name === "analyst") { dx = -4; }
+  const blink = lt > 1.05 && lt < 1.15 ? .1 : 1;
+  el.style.transform = `rotate(${lrot}deg)`; er.style.transform = `rotate(${rrot}deg)`;
+  face.style.transform = `translate(${dx}px,${dy}px) scaleY(${sy * blink})`;
+  $("#gl").style.opacity = name === "analyst" ? 1 : 0;
+  ["roast", "teacher", "mod", "analyst", "helper", "degen"].forEach((k) => {
+    const acc = $("#a-" + k); const on = k === name;
+    acc.style.opacity = on ? seg(lt, .1, .3) : 0;
+    acc.style.transform = on ? `translateY(${Math.sin(lt * 5) * 5}px) rotate(${Math.sin(lt * 3) * 8}deg)` : "";
+  });
+  // lasers for degen
+  const lz = name === "degen" ? easeOut(seg(lt, .2, .5)) : 0;
+  const L = [[$("#la1"), 123, 142], [$("#la2"), 180, 142]];
+  L.forEach(([z, x, y]) => { z.style.left = x + "px"; z.style.top = y + "px"; z.style.opacity = lz;
+    z.style.transform = `rotate(${8 + Math.sin(lt * 9) * 1.5}deg) scaleX(${lz})`; });
+};
+</script></body></html>

@@ -1,0 +1,55 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+  .stage { background: radial-gradient(70% 70% at 50% 120%, rgba(88,101,242,.6), transparent 60%), var(--void); }
+  .w { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center;
+    font: 800 168px/1 "Brico"; letter-spacing: -.05em; opacity: 0; }
+  .w.c { color: var(--coral); } .w.l { color: var(--lime); }
+  .w s { text-decoration-thickness: 14px; text-decoration-color: var(--coral); }
+  .meet { position: absolute; left: 600px; top: 270px; opacity: 0; }
+  .meet small { display: block; font: 700 18px "Mono"; letter-spacing: .25em; color: var(--lime); margin-bottom: 6px; }
+  .meet b { font: 800 128px/0.9 "Brico"; letter-spacing: -.05em; }
+  .meet b i { font-style: normal; color: var(--lime); }
+  .meet p { font: 400 26px "Brico"; color: #c9c9d6; margin-top: 14px; }
+  .holder { position: absolute; left: 250px; top: 360px; }
+  .orb { --s: 300px; position: absolute; left: -150px; top: -150px; }
+  .tail { position: absolute; width: 96px; height: 96px; left: -146px; top: 92px;
+    background: linear-gradient(160deg, #e4ff7a, #c8ff2e 45%, #8fc410); clip-path: polygon(48% 0, 100% 34%, 0 100%); }
+  .face { position: absolute; inset: 0; transform-origin: 50% 49%; }
+  .flash { position: absolute; inset: 0; background: var(--lime); opacity: 0; z-index: 40; }
+</style></head><body><div class="stage">
+  <div class="dots"></div>
+  <div class="w" id="w1">your server<br>is loud.</div>
+  <div class="w c" id="w2"><s>fake news.</s></div>
+  <div class="w" id="w3">300 unread.</div>
+  <div class="w l" id="w4">fixed.</div>
+  <div class="holder" id="h"><div class="tail" id="tl"></div><div class="orb rim"><div class="face" id="f"><div class="eye l"></div><div class="eye r"></div></div></div></div>
+  <div class="meet" id="meet"><small>MEET</small><b>grok<i>cord</i></b><p>Grok, living in your Discord.</p></div>
+  <div class="flash" id="fl"></div>
+  <div class="grain"></div>
+</div>
+<script src="anim.js"></script>
+<script>
+const D = 5;
+window.onSeek = (ms) => {
+  const t = ms / 1000;
+  const W = [["#w1", 0, .9], ["#w2", .9, 1.6], ["#w3", 1.6, 2.3], ["#w4", 2.3, 2.75]];
+  W.forEach(([s, a, b]) => {
+    const el = $(s), on = t >= a && t < b;
+    el.style.opacity = on ? 1 : 0;
+    const p = back(seg(t, a, a + .22));
+    el.style.transform = `translateY(-50%) scale(${1.25 - .25 * p})`;
+  });
+  $("#fl").style.opacity = t >= 2.3 && t < 2.75 ? .0 : 0;
+  // orb drops in and bounces
+  const h = $("#h");
+  const drop = seg(t, 2.75, 3.4);
+  const y = t < 2.75 ? -600 : -600 * (1 - back(drop));
+  h.style.opacity = t >= 2.75 ? 1 : 0;
+  h.style.transform = `translateY(${y}px)`;
+  const blink = (t > 4.1 && t < 4.2) ? .08 : 1;
+  const look = easeInOut(seg(t, 3.5, 3.8));
+  $("#f").style.transform = `translate(${look * 26}px, ${-look * 6}px) scaleY(${blink})`;
+  const m = $("#meet"); const mp = easeOut(seg(t, 3.35, 3.75));
+  m.style.opacity = mp; m.style.transform = `translateX(${(1 - mp) * 40}px)`;
+};
+</script></body></html>
