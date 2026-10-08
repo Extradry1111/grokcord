@@ -211,3 +211,63 @@ async def test_feature_toggle(store):
     assert await store.disabled_features(1) == ["imagine"]
     await store.set_enabled(1, "imagine", True)
     assert await store.is_enabled(1, "imagine")
+
+
+def api_error(cls, msg):
+    import openai
+    exc = getattr(openai, cls).__new__(getattr(openai, cls))
+    Exception.__init__(exc, msg)
+    return exc
+
+
+async def test_cheap_model_for_light_tasks_main_for_fact_checks():
+    responses = FakeResponses("VERDICT: TRUE\n- ok")
+    grok = Grok("k", "big", "img", "u", client=NS(responses=responses), cheap_model="small")
+    await grok.chat("helper", [], search=True)
+    await grok.tldr("a: hi", "general")
+    await grok.fact_check("x", "a")
+    await grok.pulse("btc", 24, "English")
+    chat, tldr, fact, pulse = responses.calls
+    assert chat["model"] == "small" and tldr["model"] == "small"
+    assert fact["model"] == "big" and pulse["model"] == "big"
+    assert chat["tools"] == [{"type": "web_search"}] and chat["max_tool_calls"] == 2
+    assert "tools" not in tldr and "max_tool_calls" not in tldr
+    assert fact["max_tool_calls"] == 4 and pulse["max_tool_calls"] == 3
+
+
+async def test_missing_cheap_model_falls_back_to_main():
+    class NoSmall(FakeResponses):
+        async def create(self, **kwargs):
+            if kwargs["model"] == "small":
+                raise api_error("NotFoundError", "The model small does not exist")
+            return await super().create(**kwargs)
+
+    responses = NoSmall("hi")
+    grok = Grok("k", "big", "img", "u", client=NS(responses=responses), cheap_model="small")
+    assert (await grok.chat("helper", [])).text == "hi"
+    assert grok.cheap_model == "big"
+
+
+async def test_rejected_tool_cap_is_dropped():
+    class NoCap(FakeResponses):
+        async def create(self, **kwargs):
+            if "max_tool_calls" in kwargs:
+                raise api_error("BadRequestError", "unknown parameter: max_tool_calls")
+            return await super().create(**kwargs)
+
+    responses = NoCap("ok")
+    grok = Grok("k", "m", "i", "u", client=NS(responses=responses))
+    await grok.chat("helper", [], search=True)
+    assert grok.tool_cap is False and "max_tool_calls" not in responses.calls[-1]
+
+
+async def test_unrelated_bad_request_still_raises():
+    import openai
+
+    class Broken(FakeResponses):
+        async def create(self, **kwargs):
+            raise api_error("BadRequestError", "content policy violation")
+
+    grok = Grok("k", "m", "i", "u", client=NS(responses=Broken("x")))
+    with pytest.raises(openai.BadRequestError):
+        await grok.chat("helper", [])

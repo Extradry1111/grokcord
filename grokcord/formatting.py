@@ -84,7 +84,7 @@ def transcript_line(author: str, content: str, attachments: int = 0, limit: int 
     return f"{author}: {content}"
 
 
-def clamp_transcript(lines: list[str], max_chars: int = 60_000) -> str:
+def clamp_transcript(lines: list[str], max_chars: int = 24_000) -> str:
     """Keep the most recent lines that fit in ``max_chars`` (lines are oldest first)."""
     kept: list[str] = []
     total = 0

@@ -23,6 +23,7 @@ class Config:
     discord_token: str
     xai_api_key: str
     model: str = "grok-4.7"
+    cheap_model: str = "grok-4.3"
     image_model: str = "grok-imagine-image-2.0"
     base_url: str = "https://api.x.ai/v1"
     daily_user_limit: int = 40
@@ -47,6 +48,7 @@ class Config:
             discord_token=os.environ["DISCORD_TOKEN"].strip(),
             xai_api_key=os.environ["XAI_API_KEY"].strip(),
             model=os.getenv("GROK_MODEL", "").strip() or cls.model,
+            cheap_model=os.getenv("GROK_CHEAP_MODEL", "").strip() or cls.cheap_model,
             image_model=os.getenv("GROK_IMAGE_MODEL", "").strip() or cls.image_model,
             base_url=os.getenv("XAI_BASE_URL", "").strip() or cls.base_url,
             daily_user_limit=_int("DAILY_USER_LIMIT", cls.daily_user_limit),

@@ -161,7 +161,8 @@ All settings live in `.env` ([example](.env.example)):
 |---|---|---|
 | `DISCORD_TOKEN` | required | Your bot token |
 | `XAI_API_KEY` | required | Your xAI key |
-| `GROK_MODEL` | `grok-4.7` | Text, vision and search model |
+| `GROK_MODEL` | `grok-4.7` | Main model: fact-checks and /pulse |
+| `GROK_CHEAP_MODEL` | `grok-4.3` | Cheaper model for chat, /ask, /tldr, explain, translate. Falls back to `GROK_MODEL` if unavailable |
 | `GROK_IMAGE_MODEL` | `grok-imagine-image-2.0` | Image model |
 | `GROK_REASONING` | `on` | Low reasoning effort for chat (fast), medium for fact-checks. `off` if your model rejects it |
 | `DAILY_USER_LIMIT` | `40` | Units per member per day |
@@ -177,12 +178,20 @@ Caps reset at 00:00 UTC. Admins can override them per server with `/grokcord lim
 
 ## 💸 What it costs
 
-grokcord is free. You pay xAI directly for what your server uses, at [xAI's API prices](https://x.ai/api). Fact-checks, `/pulse` and @mention chat use live search, which costs more per answer than plain chat. Images are billed per image.
+grokcord is free. You pay xAI directly for what your server uses, at [xAI's API prices](https://x.ai/api). It's built to keep that bill small:
+
+| What | How grokcord keeps it cheap |
+|---|---|
+| Chat, /ask, /tldr, explain, translate | Run on the cheaper `GROK_CHEAP_MODEL` with low reasoning effort |
+| Web search | Only when the question needs fresh facts, and at most 2 searches per chat answer |
+| X search | Billed per post found, so it's used only in `/pulse` and fact-checks, with a cap per request |
+| /tldr | Reads 100 messages by default, and the transcript is trimmed before it's sent |
+| Everyone | Daily caps per member and per server, on by default |
 
 To keep it predictable:
-1. Set a **monthly limit** in the [xAI console](https://console.x.ai).
-2. Keep grokcord's **daily caps** (on by default) and tune them with `/grokcord limits`.
-3. Turn off what you don't need with `/grokcord feature`.
+1. Set a **monthly limit** in the [xAI console](https://console.x.ai), and check its usage page to see whether tokens or search calls cost you most.
+2. Tune the daily caps with `/grokcord limits`.
+3. Turn off what you don't need with `/grokcord feature` (fact-checks and `/pulse` are the priciest because they search).
 
 <br>
 

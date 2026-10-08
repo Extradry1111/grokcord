@@ -75,7 +75,7 @@ class Grokcord(discord.Client):
         super().__init__(intents=intents, allowed_mentions=discord.AllowedMentions.none())
         self.config = config
         self.grok = grok or Grok(config.xai_api_key, config.model, config.image_model, config.base_url,
-                                 reasoning=config.reasoning)
+                                 reasoning=config.reasoning, cheap_model=config.cheap_model)
         self.store = store or Store(config.database_path)
         self.tree = app_commands.CommandTree(self)
         register_commands(self)
@@ -322,9 +322,9 @@ def register_commands(bot: Grokcord) -> None:
         await run_interaction(bot, interaction, "ask", 1, work, ephemeral=private)
 
     @tree.command(description="What did I miss? Summarise the recent messages in this channel.")
-    @app_commands.describe(messages="How many recent messages to read (default 150)",
+    @app_commands.describe(messages="How many recent messages to read (default 100)",
                            private="Only you see the summary (default: on)")
-    async def tldr(interaction: discord.Interaction, messages: app_commands.Range[int, 20, 500] = 150,
+    async def tldr(interaction: discord.Interaction, messages: app_commands.Range[int, 20, 500] = 100,
                    private: bool = True) -> None:
         channel = interaction.channel
         if channel is None or not hasattr(channel, "history"):
