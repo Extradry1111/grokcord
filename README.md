@@ -17,7 +17,7 @@ Right-click fact-checks · live X pulse · /tldr for busy channels · vision · 
 ![license](https://img.shields.io/badge/license-MIT-0b0b12?labelColor=0b0b12&color=ffffff)
 ![self-host](https://img.shields.io/badge/self--host-10%20min-0b0b12?labelColor=0b0b12&color=c8ff2e)
 
-[**Quickstart**](#-quickstart-10-minutes) · [**Features**](#-what-it-does) · [**Commands**](#-every-command) · [**Setup guide**](docs/SETUP.md) · [**Promo video**](media/grokcord-promo.mp4)
+[**Quickstart**](#-quickstart-10-minutes) · [**Features**](#-what-it-does) · [**Commands**](#-every-command) · [**Setup guide**](docs/SETUP.md) · [**How to use**](docs/USAGE.md) · [**Promo video**](media/grokcord-promo.mp4)
 
 </div>
 
@@ -125,6 +125,8 @@ Or deploy to **Railway** in a few clicks: fork → *Deploy from GitHub* → add 
 
 ## 📖 Every command
 
+> Examples and tips for members and admins: **[docs/USAGE.md](docs/USAGE.md)**
+
 | Command | Who | What it does |
 |---|---|---|
 | `@grokcord <anything>` | everyone | Chat with Grok, with channel context and live search |
@@ -211,7 +213,7 @@ Discord ──▶ grokcord (discord.py) ──▶ xAI Responses API ──▶ gr
 
 ```bash
 pip install -r requirements.txt pytest pytest-asyncio
-python -m pytest        # 21 tests, no API keys needed
+python -m pytest        # 22 tests, no API keys needed
 ```
 
 <br>

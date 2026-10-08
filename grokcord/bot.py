@@ -182,7 +182,10 @@ def ids(interaction: discord.Interaction) -> tuple[int, int, int]:
 
 async def run_interaction(bot: Grokcord, interaction: discord.Interaction, feature: str, units: int,
                           work, *, ephemeral: bool = False) -> None:
-    """Gate, defer, run ``work()`` -> (embeds, files, tokens), charge, and reply."""
+    """Gate, defer, run ``work()`` -> (embeds, files, tokens), charge, and reply.
+
+    ``work`` returns ``tokens=None`` when it didn't call Grok, so the user isn't charged.
+    """
     gid, _cid, uid = ids(interaction)
     error = await bot.gate(gid, uid, feature, units)
     if error:
@@ -195,7 +198,8 @@ async def run_interaction(bot: Grokcord, interaction: discord.Interaction, featu
         log.exception("%s failed", feature)
         await interaction.followup.send(friendly_error(exc), ephemeral=True)
         return
-    await bot.store.add_usage(gid, uid, units, tokens)
+    if tokens is not None:
+        await bot.store.add_usage(gid, uid, units, tokens)
     footer = await bot.footer(gid, uid)
     if embeds:
         embeds[-1].set_footer(text=footer)
@@ -276,7 +280,7 @@ def register_commands(bot: Grokcord) -> None:
             lines.reverse()
             if len(lines) < 3:
                 return [discord.Embed(description="Not enough conversation here to summarise yet.",
-                                      color=fmt.BRAND)], None, 0
+                                      color=fmt.BRAND)], None, None
             result = await bot.grok.tldr(fmt.clamp_transcript(lines), getattr(channel, "name", "chat"))
             title = f"📜 TL;DR of the last {len(lines)} messages"
             return fmt.answer_embeds(result.text, [], title=title), None, result.tokens

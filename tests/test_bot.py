@@ -51,3 +51,41 @@ def test_image_urls_filters_types():
                           NS(url="c.jpg", content_type="image/jpeg; charset=x")],
              embeds=[NS(image=NS(url="d.webp")), NS(image=None)])
     assert image_urls(msg) == ["a.png", "c.jpg", "d.webp"]
+
+
+class FakeResponse:
+    async def send_message(self, *a, **k):
+        self.sent = (a, k)
+
+    async def defer(self, **k):
+        pass
+
+
+class FakeFollowup:
+    def __init__(self):
+        self.sent = []
+
+    async def send(self, *a, **k):
+        self.sent.append(k)
+
+
+def fake_interaction():
+    return NS(guild_id=1, channel_id=2, user=NS(id=7), response=FakeResponse(), followup=FakeFollowup())
+
+
+async def test_run_interaction_charges_only_real_calls(bot):
+    import discord
+    from grokcord.bot import run_interaction
+
+    async def no_call():
+        return [discord.Embed(description="nothing")], None, None
+
+    async def real_call():
+        return [discord.Embed(description="answer")], None, 42
+
+    await run_interaction(bot, fake_interaction(), "tldr", 1, no_call)
+    assert await bot.store.usage(1, 7) == (0, 0, 0)
+    inter = fake_interaction()
+    await run_interaction(bot, inter, "ask", 1, real_call)
+    assert await bot.store.usage(1, 7) == (1, 42, 1)
+    assert inter.followup.sent[0]["embeds"][0].footer.text == "grokcord · 2 units left today"
