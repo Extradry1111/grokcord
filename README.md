@@ -4,6 +4,8 @@
 
 <br>
 
+<img src="media/logo-512.png" height="64" alt="grokcord">&nbsp;&nbsp;<b>×</b>&nbsp;&nbsp;<img src="media/grok-bot.png" height="64" alt="Grok Bot">
+
 <b>Grok, living in your Discord.</b><br>
 Right-click fact-checks · live X pulse · /tldr for busy channels · vision · images · 6 personas · spend caps
 
@@ -250,7 +252,7 @@ The demo visuals are code too: [`studio/`](studio) renders every GIF and the pro
 <br>
 
 <div align="center">
-<img src="media/logo-512.png" width="96" alt="grokcord logo">
+<img src="media/logo-512.png" width="80" alt="grokcord logo">&nbsp;&nbsp;&nbsp;<img src="media/grok-bot.png" width="80" alt="Grok Bot">
 
 **grokcord** · MIT · built by [@Pashoke1](https://x.com/Pashoke1)
 

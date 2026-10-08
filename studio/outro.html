@@ -2,20 +2,24 @@
 <style>
   .stage { background: radial-gradient(70% 70% at 50% 120%, rgba(88,101,242,.7), transparent 60%),
     radial-gradient(40% 40% at 100% 0%, rgba(200,255,46,.12), transparent 70%), var(--void); }
-  .logo { position: absolute; left: 50%; top: 92px; width: 250px; height: 250px; margin-left: -125px; }
+  .logo { position: absolute; left: 50%; top: 70px; width: 250px; height: 250px; margin-left: -125px; }
   .logo img { width: 100%; height: 100%; }
-  .wm { position: absolute; left: 0; right: 0; top: 360px; text-align: center; font: 800 112px/1 "Brico"; letter-spacing: -.05em; }
+  .wm { position: absolute; left: 0; right: 0; top: 338px; text-align: center; font: 800 112px/1 "Brico"; letter-spacing: -.05em; }
   .wm i { font-style: normal; color: var(--lime); }
-  .url { position: absolute; left: 0; right: 0; top: 500px; text-align: center; font: 700 26px "Mono"; color: #fff; }
+  .url { position: absolute; left: 0; right: 0; top: 476px; text-align: center; font: 700 26px "Mono"; color: #fff; }
   .url span { background: rgba(255,255,255,.06); border: 1px solid #34354a; padding: 10px 18px; border-radius: 12px; }
-  .meta { position: absolute; left: 0; right: 0; top: 590px; text-align: center; font: 400 17px "Mono"; color: var(--muted); letter-spacing: .12em; }
+  .meta { position: absolute; left: 0; right: 0; top: 560px; text-align: center; font: 400 17px "Mono"; color: var(--muted); letter-spacing: .12em; }
   .meta b { color: var(--lime); font-weight: 700; }
+  .pw { position: absolute; left: 0; right: 0; top: 610px; display: flex; justify-content: center; align-items: center; gap: 12px;
+    font: 400 15px "Mono"; color: var(--muted); letter-spacing: .12em; }
+  .pw img { width: 40px; height: 40px; border-radius: 10px; }
 </style></head><body><div class="stage">
   <div class="dots"></div>
   <div class="logo" id="lg"><img src="../media/logo.png"></div>
   <div class="wm" id="wm">grok<i>cord</i></div>
   <div class="url" id="url"><span id="u">github.com/Extradry1111/grokcord</span></div>
   <div class="meta" id="meta">FREE · OPEN SOURCE · MIT · <b>⭐ STAR IT</b></div>
+  <div class="pw" id="pw">POWERED BY <img src="../media/grok-bot.png"> GROK</div>
   <div class="grain"></div>
 </div>
 <script src="anim.js"></script>
@@ -27,6 +31,7 @@ window.onSeek = (ms) => {
   enter($("#wm"), t, .35, .4, 20);
   enter($("#url"), t, .7, .3, 10); type($("#u"), t, .75, 1.6);
   enter($("#meta"), t, 1.5, .4, 8);
+  enter($("#pw"), t, 1.8, .4, 8);
   $(".stage").style.opacity = 1 - seg(t, D - .35, D);
 };
 </script></body></html>
